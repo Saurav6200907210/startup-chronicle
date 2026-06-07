@@ -273,12 +273,13 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
 
     const displayName =
       typeof payload.name === "string" && payload.name.trim().length > 0
-        ? payload.name
+        ? (payload.name as string)
         : data.name;
 
     const { error: insertError } = await supabaseAdmin
       .from("reports")
-      .insert({ slug, name: displayName, payload });
+      .insert({ slug, name: displayName, payload: payload as never });
+
 
     if (insertError) {
       // Race: another request inserted first — just fetch it.
