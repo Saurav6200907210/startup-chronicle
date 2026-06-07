@@ -323,14 +323,20 @@ export const listRecentReports = createServerFn({ method: "GET" }).handler(async
 
 export const getReport = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<{ slug: string; name: string; payload: StartupReport; created_at: string } | null> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("reports")
-      .select("slug, name, payload, created_at, view_count")
+      .select("slug, name, payload, created_at")
       .eq("slug", data.slug)
       .maybeSingle();
     if (error) throw error;
     if (!row) return null;
-    return row;
+    return {
+      slug: row.slug,
+      name: row.name,
+      created_at: row.created_at,
+      payload: row.payload as unknown as StartupReport,
+    };
   });
+
