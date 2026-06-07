@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { StartupReport } from "./report-types";
+
 
 const InputSchema = z.object({
   name: z.string().trim().min(1).max(100),
