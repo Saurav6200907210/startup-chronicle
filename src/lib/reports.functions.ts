@@ -208,9 +208,11 @@ const REPORT_TOOL = {
   },
 };
 
+type GenResult = { slug: string; name: string; payload: StartupReport; cached: boolean };
+
 export const getOrGenerateReport = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<GenResult> => {
     const slug = slugify(data.name);
     if (!slug) throw new Error("Invalid startup name");
 
@@ -228,7 +230,12 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
         .from("reports")
         .update({ view_count: (existing.view_count ?? 0) + 1 })
         .eq("slug", slug);
-      return { slug: existing.slug, name: existing.name, payload: existing.payload, cached: true };
+      return {
+        slug: existing.slug,
+        name: existing.name,
+        payload: existing.payload as unknown as StartupReport,
+        cached: true,
+      };
     }
 
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -266,36 +273,42 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
     if (!call?.function?.arguments) {
       throw new Error("AI did not return a structured dossier");
     }
-    let payload: Record<string, unknown>;
+    let payload: StartupReport;
     try {
-      payload = JSON.parse(call.function.arguments);
+      payload = JSON.parse(call.function.arguments) as StartupReport;
     } catch {
       throw new Error("AI returned malformed JSON");
     }
 
     const displayName =
       typeof payload.name === "string" && payload.name.trim().length > 0
-        ? (payload.name as string)
+        ? payload.name
         : data.name;
 
     const { error: insertError } = await supabaseAdmin
       .from("reports")
       .insert({ slug, name: displayName, payload: payload as never });
 
-
     if (insertError) {
-      // Race: another request inserted first — just fetch it.
       const { data: retry } = await supabaseAdmin
         .from("reports")
         .select("slug, name, payload")
         .eq("slug", slug)
         .maybeSingle();
-      if (retry) return { slug: retry.slug, name: retry.name, payload: retry.payload, cached: true };
+      if (retry) {
+        return {
+          slug: retry.slug,
+          name: retry.name,
+          payload: retry.payload as unknown as StartupReport,
+          cached: true,
+        };
+      }
       throw insertError;
     }
 
     return { slug, name: displayName, payload, cached: false };
   });
+
 
 export const listRecentReports = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
