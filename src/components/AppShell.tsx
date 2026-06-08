@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-900 text-silver flex">
-      <aside className="w-64 border-r border-border-subtle/50 flex-col p-6 space-y-8 hidden md:flex shrink-0">
+      <aside className="w-64 border-r border-border-subtle/50 flex-col p-6 space-y-8 hidden md:flex shrink-0 sticky top-0 h-screen overflow-y-auto">
+
         <Link to="/" className="flex items-center space-x-2.5">
           <div className="size-6 bg-silver rounded-sm" />
           <span className="font-bold tracking-tighter text-lg uppercase">Helix DNA</span>
