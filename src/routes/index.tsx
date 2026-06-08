@@ -26,12 +26,19 @@ function IndexPage() {
   const navigate = useNavigate();
   const generate = useServerFn(getOrGenerateReport);
   const listFn = useServerFn(listRecentReports);
+  const removeFn = useServerFn(deleteReport);
+  const qc = useQueryClient();
 
   const recent = useQuery({ queryKey: ["reports"], queryFn: () => listFn() });
 
   const mutation = useMutation({
     mutationFn: (name: string) => generate({ data: { name } }),
     onSuccess: (res) => navigate({ to: "/report/$slug", params: { slug: res.slug } }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (slug: string) => removeFn({ data: { slug } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
   });
 
   const submit = (e?: React.FormEvent) => {
