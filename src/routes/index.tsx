@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { getOrGenerateReport, listRecentReports } from "@/lib/reports.functions";
+import { getOrGenerateReport, listRecentReports, deleteReport } from "@/lib/reports.functions";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
