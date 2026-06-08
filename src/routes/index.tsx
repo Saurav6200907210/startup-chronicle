@@ -130,20 +130,34 @@ function IndexPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {recent.data!.map((r) => (
-              <a
+              <div
                 key={r.slug}
-                href={`/report/${r.slug}`}
-                className="panel p-5 hover:border-silver/40 transition group"
+                className="panel p-5 hover:border-silver/40 transition group relative"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-silver-muted">Dossier</span>
-                  <span className="text-[10px] font-mono text-silver-muted">{r.view_count ?? 0} views</span>
-                </div>
-                <h3 className="text-lg font-medium text-silver group-hover:tracking-wide transition">{r.name}</h3>
-                <div className="mt-4 text-[10px] font-mono text-silver-muted">
-                  {new Date(r.created_at).toLocaleDateString()}
-                </div>
-              </a>
+                <a href={`/report/${r.slug}`} className="block">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-silver-muted">Dossier</span>
+                    <span className="text-[10px] font-mono text-silver-muted">{r.view_count ?? 0} views</span>
+                  </div>
+                  <h3 className="text-lg font-medium text-silver group-hover:tracking-wide transition pr-8">{r.name}</h3>
+                  <div className="mt-4 text-[10px] font-mono text-silver-muted">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </div>
+                </a>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (confirm(`Delete dossier "${r.name}"?`)) deleteMutation.mutate(r.slug);
+                  }}
+                  disabled={deleteMutation.isPending}
+                  aria-label="Delete dossier"
+                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white text-surface-900 text-[10px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 hover:bg-white/90 transition disabled:opacity-40 shadow-sm"
+                >
+                  <Trash2 className="size-3" />
+                  Delete
+                </button>
+              </div>
             ))}
           </div>
         )}
