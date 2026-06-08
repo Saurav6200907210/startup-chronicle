@@ -340,3 +340,13 @@ export const getReport = createServerFn({ method: "GET" })
     };
   });
 
+export const deleteReport = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("reports").delete().eq("slug", data.slug);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
