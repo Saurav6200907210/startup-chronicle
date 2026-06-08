@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
-      { title: "Archive — Helix DNA" },
+      { title: "Archive — StartupDNA" },
       { name: "description", content: "Browse cached startup intelligence dossiers." },
     ],
   }),

@@ -10,9 +10,9 @@ import { getOrGenerateReport, listRecentReports, deleteReport } from "@/lib/repo
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Helix DNA — Decode the architecture of any startup" },
+      { title: "StartupDNA — Decode the architecture of any startup" },
       { name: "description", content: "AI-generated investor-grade intelligence dossiers on any startup. Founder DNA, growth replay, competitor matrix, predictions." },
-      { property: "og:title", content: "Helix DNA — Startup Intelligence Terminal" },
+      { property: "og:title", content: "StartupDNA — Startup Intelligence Terminal" },
       { property: "og:description", content: "Investor-grade AI dossiers on any startup. Generated in seconds." },
     ],
   }),

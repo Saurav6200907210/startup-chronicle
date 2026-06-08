@@ -12,9 +12,9 @@ import type { StartupReport } from "@/lib/report-types";
 export const Route = createFileRoute("/report/$slug")({
   head: ({ params }) => ({
     meta: [
-      { title: `${params.slug.replace(/-/g, " ")} — Helix DNA Dossier` },
+      { title: `${params.slug.replace(/-/g, " ")} — StartupDNA Dossier` },
       { name: "description", content: `AI intelligence dossier on ${params.slug.replace(/-/g, " ")}. Founder DNA, growth, competitors, predictions.` },
-      { property: "og:title", content: `${params.slug.replace(/-/g, " ")} — Helix DNA` },
+      { property: "og:title", content: `${params.slug.replace(/-/g, " ")} — StartupDNA` },
       { property: "og:description", content: "Investor-grade startup intelligence." },
     ],
   }),
