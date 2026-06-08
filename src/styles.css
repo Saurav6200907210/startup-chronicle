@@ -119,6 +119,26 @@
   /* Already dark by default; keep parity */
 }
 
+/* Light theme — professional white #FFFFFF on near-black text */
+html.light {
+  --surface-900: oklch(1 0 0);              /* #FFFFFF canvas */
+  --surface-800: oklch(0.975 0 0);          /* panel */
+  --surface-700: oklch(0.945 0 0);          /* raised panel */
+  --border-subtle: oklch(0.86 0 0);
+  --silver: oklch(0.145 0 0);               /* near-black text #0A0A0A-ish */
+  --silver-muted: oklch(0.42 0 0);
+  --signal: oklch(0.55 0.16 150);
+  --warn: oklch(0.62 0.14 75);
+  --danger: oklch(0.55 0.2 25);
+}
+
+/* Smooth theme transitions */
+html, body, * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
