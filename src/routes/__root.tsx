@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  ScriptOnce,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -76,14 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Helix DNA — Startup Intelligence Terminal" },
+      { title: "StartupDNA — Startup Intelligence Terminal" },
       {
         name: "description",
         content:
           "Decode the architecture of any startup. AI-generated founder, product, growth, competitor, and risk intelligence — investor-grade dossiers in seconds.",
       },
-      { name: "author", content: "Helix DNA" },
-      { property: "og:title", content: "Helix DNA — Startup Intelligence Terminal" },
+      { name: "author", content: "StartupDNA" },
+      { property: "og:title", content: "StartupDNA — Startup Intelligence Terminal" },
       {
         property: "og:description",
         content:
@@ -110,11 +111,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <ScriptOnce>{`(function(){try{var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}}catch(e){}})();`}</ScriptOnce>
       </head>
-      <body className="bg-surface-900 text-silver antialiased">
+      <body className="bg-surface-900 text-silver antialiased" suppressHydrationWarning>
         {children}
         <Scripts />
       </body>
