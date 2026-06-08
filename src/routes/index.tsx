@@ -152,9 +152,9 @@ function IndexPage() {
                   }}
                   disabled={deleteMutation.isPending}
                   aria-label="Delete dossier"
-                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white text-surface-900 text-[10px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 hover:bg-white/90 transition disabled:opacity-40 shadow-sm"
+                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white text-black border border-white/80 text-[10px] font-mono uppercase tracking-[0.15em] font-semibold opacity-100 hover:bg-neutral-200 hover:border-white active:scale-95 transition-all duration-150 disabled:opacity-40 shadow-[0_2px_8px_rgba(255,255,255,0.15)]"
                 >
-                  <Trash2 className="size-3" />
+                  <Trash2 className="size-3 stroke-[2.5]" />
                   Delete
                 </button>
               </div>
