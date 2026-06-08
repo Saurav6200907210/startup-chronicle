@@ -38,7 +38,7 @@ function ReportPage() {
   useEffect(() => {
     if (!isLoading && data === null && !generating) {
       setGenerating(true);
-      const niceName = slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+      const niceName = slug.split("-").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
       generate({ data: { name: niceName } })
         .then(() => refetch())
         .catch((e) => setGenError((e as Error).message))
