@@ -238,17 +238,27 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
       };
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+    const lovableKey = process.env.LOVABLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!lovableKey && !geminiKey) {
+      throw new Error("Set LOVABLE_API_KEY or GEMINI_API_KEY in .env");
+    }
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const url = lovableKey
+      ? "https://ai.gateway.lovable.dev/v1/chat/completions"
+      : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    const model = lovableKey
+      ? "google/gemini-3-flash-preview"
+      : (process.env.GEMINI_MODEL || "gemini-2.5-flash");
+
+    const res = await fetch(url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${lovableKey || geminiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           {
