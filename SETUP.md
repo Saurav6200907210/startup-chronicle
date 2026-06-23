@@ -8,7 +8,7 @@
 1. Extract the zip.
 2. `cp .env.local.example .env` (overwrites the included cloud `.env`).
 3. Fill in:
-   - `SUPABASE_SERVICE_ROLE_KEY` — Supabase Dashboard → Project Settings → API
+   - `SUPABASE_SERVICE_ROLE_KEY` — Supabase Dashboard → Project Settings → API → **Secret keys** tab → copy the `sb_secret_...` key (NOT the publishable key)
    - `SUPABASE_DB_URL` — replace `[YOUR-PASSWORD]` with your DB password
    - `GEMINI_API_KEY` — already pre-filled (use your own real key from https://aistudio.google.com/apikey if the provided one fails — real keys start with `AIza`)
 4. Install deps: `bun install` (or `npm install`)
