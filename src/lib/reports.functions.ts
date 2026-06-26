@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 import type { StartupReport } from "./report-types";
 
 
@@ -210,38 +212,98 @@ const REPORT_TOOL = {
 
 type GenResult = { slug: string; name: string; payload: StartupReport; cached: boolean };
 
+type ReportCacheRow = {
+  slug: string;
+  name: string;
+  payload: StartupReport;
+  created_at: string;
+  view_count: number;
+};
+
+type RecentReport = Pick<ReportCacheRow, "slug" | "name" | "created_at" | "view_count">;
+
+const localReportCache = new Map<string, ReportCacheRow>();
+const localDeletedSlugs = new Set<string>();
+
+async function getAdminClient(): Promise<SupabaseClient<Database> | null> {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin as SupabaseClient<Database>;
+}
+
+function getPublicClient(): SupabaseClient<Database> | null {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
+function readLocalReport(slug: string) {
+  const row = localReportCache.get(slug);
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    name: row.name,
+    created_at: row.created_at,
+    payload: row.payload,
+  };
+}
+
+function listLocalReports(): RecentReport[] {
+  return [...localReportCache.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 24)
+    .map(({ slug, name, created_at, view_count }) => ({ slug, name, created_at, view_count }));
+}
+
 export const getOrGenerateReport = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data }): Promise<GenResult> => {
     const slug = slugify(data.name);
     if (!slug) throw new Error("Invalid startup name");
+    localDeletedSlugs.delete(slug);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let supabaseAdmin = await getAdminClient();
 
     // Cache hit?
-    const { data: existing } = await supabaseAdmin
-      .from("reports")
-      .select("slug, name, payload, created_at, view_count")
-      .eq("slug", slug)
-      .maybeSingle();
+    if (supabaseAdmin) {
+      try {
+        const { data: existing } = await supabaseAdmin
+          .from("reports")
+          .select("slug, name, payload, created_at, view_count")
+          .eq("slug", slug)
+          .maybeSingle();
 
-    if (existing) {
-      await supabaseAdmin
-        .from("reports")
-        .update({ view_count: (existing.view_count ?? 0) + 1 })
-        .eq("slug", slug);
-      return {
-        slug: existing.slug,
-        name: existing.name,
-        payload: existing.payload as unknown as StartupReport,
-        cached: true,
-      };
+        if (existing) {
+          await supabaseAdmin
+            .from("reports")
+            .update({ view_count: (existing.view_count ?? 0) + 1 })
+            .eq("slug", slug);
+          return {
+            slug: existing.slug,
+            name: existing.name,
+            payload: existing.payload as unknown as StartupReport,
+            cached: true,
+          };
+        }
+      } catch (error) {
+        console.warn("Database cache unavailable; using local in-memory cache.", error);
+        supabaseAdmin = null;
+      }
+    } else {
+      const local = localReportCache.get(slug);
+      if (local) {
+        local.view_count += 1;
+        return { slug: local.slug, name: local.name, payload: local.payload, cached: true };
+      }
     }
 
     const lovableKey = process.env.LOVABLE_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!lovableKey && !geminiKey) {
-      throw new Error("Set LOVABLE_API_KEY or GEMINI_API_KEY in .env");
+      throw new Error("Set GEMINI_API_KEY in .env for local VS Code runs. SUPABASE_SERVICE_ROLE_KEY is optional now.");
     }
 
     const url = lovableKey
@@ -295,65 +357,102 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
         ? payload.name
         : data.name;
 
-    const { error: insertError } = await supabaseAdmin
-      .from("reports")
-      .insert({ slug, name: displayName, payload: payload as never });
+    if (supabaseAdmin) {
+      try {
+        const { error: insertError } = await supabaseAdmin
+          .from("reports")
+          .insert({ slug, name: displayName, payload: payload as never });
 
-    if (insertError) {
-      const { data: retry } = await supabaseAdmin
-        .from("reports")
-        .select("slug, name, payload")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (retry) {
-        return {
-          slug: retry.slug,
-          name: retry.name,
-          payload: retry.payload as unknown as StartupReport,
-          cached: true,
-        };
+        if (insertError) {
+          const { data: retry } = await supabaseAdmin
+            .from("reports")
+            .select("slug, name, payload")
+            .eq("slug", slug)
+            .maybeSingle();
+          if (retry) {
+            return {
+              slug: retry.slug,
+              name: retry.name,
+              payload: retry.payload as unknown as StartupReport,
+              cached: true,
+            };
+          }
+          throw insertError;
+        }
+      } catch (error) {
+        console.warn("Could not save dossier to database; keeping it in local memory.", error);
       }
-      throw insertError;
     }
+
+    localReportCache.set(slug, {
+      slug,
+      name: displayName,
+      payload,
+      created_at: new Date().toISOString(),
+      view_count: 0,
+    });
 
     return { slug, name: displayName, payload, cached: false };
   });
 
 
 export const listRecentReports = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("reports")
-    .select("slug, name, created_at, view_count")
-    .order("created_at", { ascending: false })
-    .limit(24);
-  if (error) throw error;
-  return data ?? [];
+  const supabase = (await getAdminClient()) ?? getPublicClient();
+  if (!supabase) return listLocalReports();
+
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select("slug, name, created_at, view_count")
+      .order("created_at", { ascending: false })
+      .limit(24);
+    if (error) throw error;
+    return (data ?? listLocalReports()).filter((report) => !localDeletedSlugs.has(report.slug));
+  } catch (error) {
+    console.warn("Could not load reports from database; using local memory.", error);
+    return listLocalReports();
+  }
 });
 
 export const getReport = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
   .handler(async ({ data }): Promise<{ slug: string; name: string; payload: StartupReport; created_at: string } | null> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("reports")
-      .select("slug, name, payload, created_at")
-      .eq("slug", data.slug)
-      .maybeSingle();
-    if (error) throw error;
-    if (!row) return null;
-    return {
-      slug: row.slug,
-      name: row.name,
-      created_at: row.created_at,
-      payload: row.payload as unknown as StartupReport,
-    };
+    const local = readLocalReport(data.slug);
+    if (local) return local;
+    if (localDeletedSlugs.has(data.slug)) return null;
+
+    const supabase = (await getAdminClient()) ?? getPublicClient();
+    if (!supabase) return null;
+
+    try {
+      const { data: row, error } = await supabase
+        .from("reports")
+        .select("slug, name, payload, created_at")
+        .eq("slug", data.slug)
+        .maybeSingle();
+      if (error) throw error;
+      if (!row) return null;
+      return {
+        slug: row.slug,
+        name: row.name,
+        created_at: row.created_at,
+        payload: row.payload as unknown as StartupReport,
+      };
+    } catch (error) {
+      console.warn("Could not load report from database; using local memory.", error);
+      return readLocalReport(data.slug);
+    }
   });
 
 export const deleteReport = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    localReportCache.delete(data.slug);
+    localDeletedSlugs.add(data.slug);
+
+    const supabaseAdmin = await getAdminClient();
+    if (!supabaseAdmin) return { ok: true, localOnly: true };
+
     const { error } = await supabaseAdmin.from("reports").delete().eq("slug", data.slug);
     if (error) throw error;
     return { ok: true };
