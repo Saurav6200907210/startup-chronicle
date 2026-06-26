@@ -223,6 +223,7 @@ type ReportCacheRow = {
 type RecentReport = Pick<ReportCacheRow, "slug" | "name" | "created_at" | "view_count">;
 
 const localReportCache = new Map<string, ReportCacheRow>();
+const localDeletedSlugs = new Set<string>();
 
 async function getAdminClient(): Promise<SupabaseClient<Database> | null> {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
@@ -262,6 +263,7 @@ export const getOrGenerateReport = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<GenResult> => {
     const slug = slugify(data.name);
     if (!slug) throw new Error("Invalid startup name");
+    localDeletedSlugs.delete(slug);
 
     let supabaseAdmin = await getAdminClient();
 
@@ -405,7 +407,7 @@ export const listRecentReports = createServerFn({ method: "GET" }).handler(async
       .order("created_at", { ascending: false })
       .limit(24);
     if (error) throw error;
-    return data ?? listLocalReports();
+    return (data ?? listLocalReports()).filter((report) => !localDeletedSlugs.has(report.slug));
   } catch (error) {
     console.warn("Could not load reports from database; using local memory.", error);
     return listLocalReports();
@@ -417,6 +419,7 @@ export const getReport = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<{ slug: string; name: string; payload: StartupReport; created_at: string } | null> => {
     const local = readLocalReport(data.slug);
     if (local) return local;
+    if (localDeletedSlugs.has(data.slug)) return null;
 
     const supabase = (await getAdminClient()) ?? getPublicClient();
     if (!supabase) return null;
@@ -445,6 +448,7 @@ export const deleteReport = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
   .handler(async ({ data }) => {
     localReportCache.delete(data.slug);
+    localDeletedSlugs.add(data.slug);
 
     const supabaseAdmin = await getAdminClient();
     if (!supabaseAdmin) return { ok: true, localOnly: true };
