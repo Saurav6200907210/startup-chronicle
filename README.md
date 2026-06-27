@@ -68,35 +68,57 @@ Instead of manually researching dozens of sources, StartupDNA automatically orga
 
 # 📸 Screenshots
 
-## 🏠 Home
 
-<img src="./screenshots/home.png" width="100%">
+## 🏠 Home Page
 
----
+The landing page where users can search and analyze any startup using AI.
 
-## 📊 Dashboard
-
-<img src="./screenshots/dashboard.png" width="100%">
-
----
-
-## 📈 Analytics
-
-<img src="./screenshots/analytics.png" width="100%">
+<p align="center">
+<img src="./readmeimage/home.png" width="100%">
+</p>
 
 ---
 
-## 📦 Product Evolution
+## 📊 Startup Information
 
-<img src="./screenshots/evolution.png" width="100%">
+Displays startup overview including valuation, funding, employees, revenue, founder details, and health score.
+
+<p align="center">
+<img src="./readmeimage/information.png" width="100%">
+</p>
+
+---
+
+## 📈 Interactive Analytics
+
+Visualizes startup growth using revenue charts, valuation trends, user growth, headcount analysis, and startup DNA metrics.
+
+<p align="center">
+<img src="./readmeimage/graph.png" width="100%">
+</p>
 
 ---
 
-## 📄 PDF Report
+## 🧬 Product Evolution & Competitor Intelligence
 
-<img src="./screenshots/pdf.png" width="100%">
+Explore product evolution timeline, feature releases, competitor matrix, startup positioning, and strategic insights.
+
+<p align="center">
+<img src="./readmeimage/content.png" width="100%">
+</p>
 
 ---
+
+## 📄 Investor-Grade PDF Export
+
+Generate professional investor-ready PDF reports with all startup insights and analytics.
+
+<p align="center">
+<img src="./readmeimage/pdf.png" width="100%">
+</p>
+
+---
+
 
 # 🛠 Tech Stack
 
